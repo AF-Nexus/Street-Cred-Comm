@@ -247,6 +247,102 @@ export const AdminVerifyResponse = zod.object({
 
 
 /**
+ * @summary Register a new user account
+ */
+export const registerUserBodyPasswordMin = 6;
+
+
+
+export const RegisterUserBody = zod.object({
+  "email": zod.string(),
+  "username": zod.string(),
+  "password": zod.string().min(registerUserBodyPasswordMin)
+})
+
+
+/**
+ * @summary Login as a user
+ */
+export const LoginUserBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginUserResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Get current user profile
+ */
+export const GetUserMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "username": zod.string(),
+  "role": zod.string(),
+  "banned": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List all users (admin only)
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "username": zod.string(),
+  "role": zod.string(),
+  "banned": zod.number(),
+  "createdAt": zod.string()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Ban or unban a user (admin only)
+ */
+export const BanUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BanUserBody = zod.object({
+  "banned": zod.number()
+})
+
+export const BanUserResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "username": zod.string(),
+  "role": zod.string(),
+  "banned": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Set user role (admin only)
+ */
+export const SetUserRoleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetUserRoleBody = zod.object({
+  "role": zod.string()
+})
+
+export const SetUserRoleResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "username": zod.string(),
+  "role": zod.string(),
+  "banned": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Upload a product image
  */
 export const UploadImageResponse = zod.object({

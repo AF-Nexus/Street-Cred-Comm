@@ -98,6 +98,39 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export interface UserRegisterInput {
+  email: string;
+  username: string;
+  /** @minLength 6 */
+  password: string;
+}
+
+export interface UserLoginInput {
+  email: string;
+  password: string;
+}
+
+export interface UserToken {
+  token: string;
+}
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  username: string;
+  role: string;
+  banned: number;
+  createdAt: string;
+}
+
+export interface BanUserInput {
+  banned: number;
+}
+
+export interface SetUserRoleInput {
+  role: string;
+}
+
 export interface UploadResponse {
   url: string;
 }

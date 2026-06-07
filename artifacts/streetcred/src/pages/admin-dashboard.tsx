@@ -9,38 +9,35 @@ import {
   useGetProductStats,
   useListProducts,
   useCreateProduct,
-  useUpdateProduct,
   useDeleteProduct,
   useToggleProductAvailability,
   useListAnnouncements,
   useCreateAnnouncement,
   useDeleteAnnouncement,
+  useListUsers,
+  useBanUser,
+  useSetUserRole,
   getListProductsQueryKey,
   getGetProductStatsQueryKey,
   getListAnnouncementsQueryKey,
   getAdminVerifyQueryKey,
+  getListUsersQueryKey,
 } from "@workspace/api-client-react";
 import { clearAdminToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Power, Edit, Image as ImageIcon, MessageSquare, Package, Upload } from "lucide-react";
+import {
+  Plus, Trash2, Power, Image as ImageIcon, MessageSquare,
+  Package, Upload, Users, ShieldCheck, ShieldOff, Ban, CheckCircle2,
+} from "lucide-react";
 import logoPath from "@assets/IMG-20260606-WA0072_1780821751075.jpg";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 
 const productSchema = z.object({
@@ -60,52 +57,53 @@ const announcementSchema = z.object({
   message: z.string().min(1, "Message required"),
 });
 
+type Tab = "products" | "announcements" | "users";
+
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"products" | "announcements">("products");
+  const [activeTab, setActiveTab] = useState<Tab>("products");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Authentication check
   const { isLoading: isVerifying, isError: isVerifyError } = useAdminVerify({
-    query: {
-      queryKey: getAdminVerifyQueryKey(),
-      retry: false,
-    }
+    query: { queryKey: getAdminVerifyQueryKey(), retry: false },
   });
 
-  // Queries
-  const { data: stats } = useGetProductStats({ query: { queryKey: getGetProductStatsQueryKey(), enabled: !isVerifyError } });
-  const { data: products } = useListProducts(undefined, { query: { queryKey: getListProductsQueryKey(), enabled: !isVerifyError } });
-  const { data: announcements } = useListAnnouncements({ query: { queryKey: getListAnnouncementsQueryKey(), enabled: !isVerifyError } });
+  const { data: stats } = useGetProductStats({
+    query: { queryKey: getGetProductStatsQueryKey(), enabled: !isVerifyError },
+  });
+  const { data: products } = useListProducts(undefined, {
+    query: { queryKey: getListProductsQueryKey(), enabled: !isVerifyError },
+  });
+  const { data: announcements } = useListAnnouncements({
+    query: { queryKey: getListAnnouncementsQueryKey(), enabled: !isVerifyError },
+  });
+  const { data: users, refetch: refetchUsers } = useListUsers({
+    query: { queryKey: getListUsersQueryKey(), enabled: !isVerifyError },
+  });
 
-  // Mutations
   const createProduct = useCreateProduct();
   const toggleAvailability = useToggleProductAvailability();
   const deleteProduct = useDeleteProduct();
   const createAnnouncement = useCreateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
+  const banUser = useBanUser();
+  const setUserRole = useSetUserRole();
 
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      category: "",
-      sizes: "S, M, L, XL",
-      imageUrl: "",
-      whatsappNumber: "",
-      featured: 0,
+      name: "", description: "", price: 0, category: "",
+      sizes: "S, M, L, XL", imageUrl: "", whatsappNumber: "", featured: 0,
     },
   });
 
   const announcementForm = useForm<z.infer<typeof announcementSchema>>({
     resolver: zodResolver(announcementSchema),
-    defaultValues: { message: "" }
+    defaultValues: { message: "" },
   });
 
   if (isVerifyError) {
@@ -115,7 +113,11 @@ export default function AdminDashboard() {
   }
 
   if (isVerifying) {
-    return <div className="min-h-screen flex items-center justify-center font-display text-2xl uppercase tracking-widest text-primary">Initializing System...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center font-display text-2xl uppercase tracking-widest text-primary">
+        Loading...
+      </div>
+    );
   }
 
   const handleLogout = () => {
@@ -126,29 +128,21 @@ export default function AdminDashboard() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       setUploadingImage(true);
       const formData = new FormData();
       formData.append("image", file);
-      
       const token = localStorage.getItem("streetcred_admin_token");
-      
       const res = await fetch("/api/uploads/image", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      
       if (!res.ok) throw new Error("Upload failed");
-      
       const data = await res.json();
       productForm.setValue("imageUrl", data.url);
-      
-      toast({ title: "Image uploaded successfully" });
-    } catch (error) {
+      toast({ title: "Image uploaded" });
+    } catch {
       toast({ variant: "destructive", title: "Image upload failed" });
     } finally {
       setUploadingImage(false);
@@ -163,8 +157,9 @@ export default function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: getGetProductStatsQueryKey() });
         setIsAddProductOpen(false);
         productForm.reset();
-        toast({ title: "Product created" });
-      }
+        toast({ title: "Product added" });
+      },
+      onError: () => toast({ variant: "destructive", title: "Failed to add product" }),
     });
   };
 
@@ -173,8 +168,8 @@ export default function AdminDashboard() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
         announcementForm.reset();
-        toast({ title: "Announcement published" });
-      }
+        toast({ title: "Announcement posted" });
+      },
     });
   };
 
@@ -184,208 +179,222 @@ export default function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetProductStatsQueryKey() });
         toast({ title: "Availability updated" });
-      }
+      },
     });
   };
 
   const handleDeleteProduct = (id: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteProduct.mutate({ id }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetProductStatsQueryKey() });
-          toast({ title: "Product deleted" });
-        }
-      });
-    }
+    if (!confirm("Delete this product?")) return;
+    deleteProduct.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetProductStatsQueryKey() });
+        toast({ title: "Product deleted" });
+      },
+    });
   };
+
+  const handleBanToggle = (id: number, currentBanned: number) => {
+    const newBanned = currentBanned === 1 ? 0 : 1;
+    banUser.mutate({ id, data: { banned: newBanned } }, {
+      onSuccess: () => {
+        refetchUsers();
+        toast({ title: newBanned === 1 ? "User banned" : "User unbanned" });
+      },
+    });
+  };
+
+  const handleRoleToggle = (id: number, currentRole: string) => {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    setUserRole.mutate({ id, data: { role: newRole } }, {
+      onSuccess: () => {
+        refetchUsers();
+        toast({ title: newRole === "admin" ? "User promoted to admin" : "Admin rights removed" });
+      },
+    });
+  };
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "products", label: "Products", icon: <Package className="w-5 h-5" /> },
+    { key: "announcements", label: "Announcements", icon: <MessageSquare className="w-5 h-5" /> },
+    { key: "users", label: "Users", icon: <Users className="w-5 h-5" /> },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Topbar */}
+      {/* Header */}
       <header className="border-b border-white/10 bg-card/50 sticky top-0 z-40 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logoPath} alt="Streetcred" className="w-8 h-8 border border-white/20" />
-            <span className="font-display text-xl tracking-widest uppercase text-primary">Command Center</span>
+            <span className="font-display text-xl tracking-widest uppercase text-primary">Admin Dashboard</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="font-sans text-xs tracking-widest uppercase hover:bg-destructive/20 hover:text-destructive">
-            <Power className="w-4 h-4 mr-2" /> Disconnect
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="font-sans text-xs tracking-widest uppercase hover:bg-destructive/20 hover:text-destructive"
+          >
+            <Power className="w-4 h-4 mr-2" /> Sign Out
           </Button>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Row */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-card border border-white/10 p-6 flex flex-col justify-between">
+          <div className="bg-card border border-white/10 p-6">
             <div className="font-sans text-xs tracking-widest uppercase text-muted-foreground mb-4">Total Products</div>
-            <div className="font-display text-6xl text-white">{stats?.total || 0}</div>
+            <div className="font-display text-6xl text-white">{stats?.total ?? 0}</div>
           </div>
-          <div className="bg-card border border-white/10 p-6 flex flex-col justify-between border-t-4 border-t-primary">
-            <div className="font-sans text-xs tracking-widest uppercase text-primary mb-4">Available / In Stock</div>
-            <div className="font-display text-6xl text-primary">{stats?.available || 0}</div>
+          <div className="bg-card border border-white/10 border-t-4 border-t-primary p-6">
+            <div className="font-sans text-xs tracking-widest uppercase text-primary mb-4">Available</div>
+            <div className="font-display text-6xl text-primary">{stats?.available ?? 0}</div>
           </div>
-          <div className="bg-card border border-white/10 p-6 flex flex-col justify-between border-t-4 border-t-destructive">
+          <div className="bg-card border border-white/10 border-t-4 border-t-destructive p-6">
             <div className="font-sans text-xs tracking-widest uppercase text-destructive mb-4">Sold Out</div>
-            <div className="font-display text-6xl text-destructive">{stats?.unavailable || 0}</div>
+            <div className="font-display text-6xl text-destructive">{stats?.unavailable ?? 0}</div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-white/10 pb-px">
-          <button 
-            className={`pb-4 font-display text-xl tracking-wider uppercase transition-colors relative ${activeTab === 'products' ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
-            onClick={() => setActiveTab('products')}
-          >
-            <Package className="inline-block w-5 h-5 mr-2 mb-1" /> Products
-            {activeTab === 'products' && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary" />}
-          </button>
-          <button 
-            className={`pb-4 font-display text-xl tracking-wider uppercase transition-colors relative ${activeTab === 'announcements' ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
-            onClick={() => setActiveTab('announcements')}
-          >
-            <MessageSquare className="inline-block w-5 h-5 mr-2 mb-1" /> Announcements
-            {activeTab === 'announcements' && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary" />}
-          </button>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-4 font-display text-xl tracking-wider uppercase transition-colors relative flex items-center gap-2 ${
+                activeTab === tab.key ? "text-primary" : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              {tab.icon} {tab.label}
+              {activeTab === tab.key && (
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-primary" />
+              )}
+            </button>
+          ))}
         </div>
 
-        {activeTab === 'products' && (
+        {/* Products Tab */}
+        {activeTab === "products" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="font-display text-3xl tracking-widest uppercase">Inventory</h2>
+              <h2 className="font-display text-3xl tracking-widest uppercase">Products</h2>
               <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
                 <DialogTrigger asChild>
                   <Button className="rounded-none font-display text-lg tracking-widest uppercase bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Plus className="w-5 h-5 mr-2" /> New Drop
+                    <Plus className="w-5 h-5 mr-2" /> Add Product
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card border border-white/10 rounded-none sm:max-w-2xl">
+                <DialogContent className="bg-card border border-white/10 rounded-none sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="font-display text-3xl tracking-widest uppercase">Create Product</DialogTitle>
+                    <DialogTitle className="font-display text-3xl tracking-widest uppercase">Add New Product</DialogTitle>
                   </DialogHeader>
                   <Form {...productForm}>
                     <form onSubmit={productForm.handleSubmit(onSubmitProduct)} className="space-y-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={productForm.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="uppercase text-xs tracking-widest">Name</FormLabel>
-                              <FormControl><Input {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={productForm.control}
-                          name="price"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="uppercase text-xs tracking-widest">Price (MWK)</FormLabel>
-                              <FormControl><Input type="number" {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={productForm.control}
-                          name="category"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="uppercase text-xs tracking-widest">Category</FormLabel>
-                              <FormControl><Input {...field} placeholder="Hoodies, Tees..." className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={productForm.control}
-                          name="sizes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="uppercase text-xs tracking-widest">Sizes (comma separated)</FormLabel>
-                              <FormControl><Input {...field} placeholder="S, M, L, XL" className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <FormField
-                        control={productForm.control}
-                        name="whatsappNumber"
-                        render={({ field }) => (
+                        <FormField control={productForm.control} name="name" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="uppercase text-xs tracking-widest">Your WhatsApp Number</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="+265999000000"
-                                className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary"
-                              />
-                            </FormControl>
-                            <p className="text-xs text-muted-foreground">Orders for this item go directly to this number</p>
+                            <FormLabel className="uppercase text-xs tracking-widest">Product Name</FormLabel>
+                            <FormControl><Input {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
                             <FormMessage />
                           </FormItem>
-                        )}
-                      />
+                        )} />
+                        <FormField control={productForm.control} name="price" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="uppercase text-xs tracking-widest">Price (MWK)</FormLabel>
+                            <FormControl><Input type="number" {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
 
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={productForm.control} name="category" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="uppercase text-xs tracking-widest">Category</FormLabel>
+                            <FormControl><Input {...field} placeholder="Hoodies, Tees..." className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={productForm.control} name="sizes" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="uppercase text-xs tracking-widest">Sizes (comma separated)</FormLabel>
+                            <FormControl><Input {...field} placeholder="S, M, L, XL" className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+
+                      <FormField control={productForm.control} name="whatsappNumber" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs tracking-widest">Your WhatsApp Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="+265999000000" className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">Orders for this item will go to this number</p>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      {/* Image Upload — plain label, not FormLabel (to avoid FormField context error) */}
                       <div className="space-y-2">
-                        <FormLabel className="uppercase text-xs tracking-widest">Image Upload</FormLabel>
+                        <p className="uppercase text-xs tracking-widest text-muted-foreground font-sans">Product Image</p>
                         <div className="flex gap-4 items-center">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
+                          <Button
+                            type="button"
+                            variant="outline"
                             className="rounded-none border-white/20"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={uploadingImage}
                           >
-                            <Upload className="w-4 h-4 mr-2" /> {uploadingImage ? 'Uploading...' : 'Choose File'}
+                            <Upload className="w-4 h-4 mr-2" />
+                            {uploadingImage ? "Uploading..." : "Upload Photo"}
                           </Button>
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            ref={fileInputRef} 
+                          <input
+                            type="file"
+                            className="hidden"
+                            ref={fileInputRef}
                             accept="image/*"
                             onChange={handleImageUpload}
                           />
                           {productForm.watch("imageUrl") && (
-                            <div className="h-12 w-12 border border-white/20 bg-black overflow-hidden relative">
+                            <div className="h-12 w-12 border border-white/20 bg-black overflow-hidden">
                               <img src={productForm.watch("imageUrl")} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <FormField
-                        control={productForm.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="uppercase text-xs tracking-widest">Description</FormLabel>
-                            <FormControl><Textarea {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary min-h-[100px]" /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex items-center gap-2 py-2 border border-white/10 p-4 bg-white/5">
-                        <input 
-                          type="checkbox" 
-                          id="featured" 
+                      <FormField control={productForm.control} name="description" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="uppercase text-xs tracking-widest">Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary min-h-[80px]" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      <div className="flex items-center gap-2 border border-white/10 p-4 bg-white/5">
+                        <input
+                          type="checkbox"
+                          id="featured"
                           checked={productForm.watch("featured") === 1}
                           onChange={(e) => productForm.setValue("featured", e.target.checked ? 1 : 0)}
-                          className="w-5 h-5 accent-primary bg-black border-white/20"
+                          className="w-5 h-5 accent-primary"
                         />
-                        <label htmlFor="featured" className="uppercase text-sm tracking-widest text-primary font-bold cursor-pointer">Mark as New Drop / Featured</label>
+                        <label htmlFor="featured" className="uppercase text-sm tracking-widest text-primary font-bold cursor-pointer">
+                          Feature on homepage
+                        </label>
                       </div>
 
-                      <Button type="submit" className="w-full rounded-none h-12 font-display text-xl tracking-widest uppercase" disabled={createProduct.isPending || uploadingImage}>
-                        Create Product
+                      <Button
+                        type="submit"
+                        className="w-full rounded-none h-12 font-display text-xl tracking-widest uppercase"
+                        disabled={createProduct.isPending || uploadingImage}
+                      >
+                        {createProduct.isPending ? "Saving..." : "Add Product"}
                       </Button>
                     </form>
                   </Form>
@@ -406,40 +415,46 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {products?.map(product => (
+                    {products?.map((product) => (
                       <tr key={product.id} className="hover:bg-white/5 transition-colors">
                         <td className="p-4 w-24">
                           <div className="w-16 h-20 bg-black border border-white/10 flex items-center justify-center overflow-hidden">
-                            {product.imageUrl ? (
-                              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
-                            )}
+                            {product.imageUrl
+                              ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                              : <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
+                            }
                           </div>
                         </td>
                         <td className="p-4">
                           <div className="font-display text-2xl tracking-wider uppercase mb-1">{product.name}</div>
-                          <div className="text-xs text-muted-foreground uppercase tracking-widest">{product.category} {product.featured === 1 && <span className="text-primary ml-2">• FEATURED</span>}</div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-widest">
+                            {product.category}
+                            {product.featured === 1 && <span className="text-primary ml-2">• Featured</span>}
+                          </div>
                         </td>
                         <td className="p-4 font-mono">MWK {product.price.toLocaleString()}</td>
                         <td className="p-4">
-                          <div className={`inline-flex px-2 py-1 text-xs uppercase tracking-widest font-bold border ${product.available === 1 ? 'border-primary text-primary bg-primary/10' : 'border-destructive text-destructive bg-destructive/10'}`}>
-                            {product.available === 1 ? 'Available' : 'Sold Out'}
-                          </div>
+                          <span className={`inline-flex px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
+                            product.available === 1
+                              ? "border-primary text-primary bg-primary/10"
+                              : "border-destructive text-destructive bg-destructive/10"
+                          }`}>
+                            {product.available === 1 ? "Available" : "Sold Out"}
+                          </span>
                         </td>
                         <td className="p-4 text-right space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="rounded-none border-white/20 font-sans text-xs uppercase tracking-widest"
                             onClick={() => handleToggleAvailability(product.id, product.available)}
                             disabled={toggleAvailability.isPending}
                           >
-                            {product.available === 1 ? 'Mark Sold Out' : 'Restock'}
+                            {product.available === 1 ? "Mark Sold Out" : "Mark Available"}
                           </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="icon" 
+                          <Button
+                            variant="destructive"
+                            size="icon"
                             className="rounded-none h-9 w-9"
                             onClick={() => handleDeleteProduct(product.id)}
                             disabled={deleteProduct.isPending}
@@ -451,7 +466,9 @@ export default function AdminDashboard() {
                     ))}
                     {!products?.length && (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">No products in inventory</td>
+                        <td colSpan={5} className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">
+                          No products yet
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -461,49 +478,50 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === 'announcements' && (
+        {/* Announcements Tab */}
+        {activeTab === "announcements" && (
           <div className="space-y-8">
             <div className="border border-white/10 bg-card p-6">
-              <h3 className="font-display text-2xl tracking-widest uppercase mb-6">Broadcast New Message</h3>
+              <h3 className="font-display text-2xl tracking-widest uppercase mb-6">Post Announcement</h3>
               <Form {...announcementForm}>
                 <form onSubmit={announcementForm.handleSubmit(onSubmitAnnouncement)} className="flex gap-4 items-start">
-                  <FormField
-                    control={announcementForm.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <Input placeholder="E.g. NEW DROP THIS FRIDAY AT 8PM CAT" {...field} className="rounded-none border-white/20 bg-black/50 h-12 focus-visible:ring-primary font-mono" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={announcementForm.control} name="message" render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <Input
+                          placeholder="E.g. New drop this Friday at 8pm!"
+                          {...field}
+                          className="rounded-none border-white/20 bg-black/50 h-12 focus-visible:ring-primary font-mono"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                   <Button type="submit" className="rounded-none h-12 px-8 font-display text-xl tracking-widest uppercase bg-primary text-primary-foreground" disabled={createAnnouncement.isPending}>
-                    Publish
+                    Post
                   </Button>
                 </form>
               </Form>
             </div>
 
             <div className="border border-white/10 bg-card">
-              <h3 className="font-display text-xl tracking-widest uppercase p-6 border-b border-white/10 bg-white/5">Active Broadcasts</h3>
+              <h3 className="font-display text-xl tracking-widest uppercase p-6 border-b border-white/10 bg-white/5">Active Announcements</h3>
               <div className="divide-y divide-white/5">
-                {announcements?.map(announcement => (
-                  <div key={announcement.id} className="p-6 flex justify-between items-center group hover:bg-white/5 transition-colors">
-                    <div className="font-mono text-lg">{announcement.message}</div>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
+                {announcements?.map((ann) => (
+                  <div key={ann.id} className="p-6 flex justify-between items-center group hover:bg-white/5 transition-colors">
+                    <div className="font-mono text-lg">{ann.message}</div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       className="rounded-none opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => {
-                        if (confirm("Delete this broadcast?")) {
-                          deleteAnnouncement.mutate({ id: announcement.id }, {
+                        if (confirm("Delete this announcement?")) {
+                          deleteAnnouncement.mutate({ id: ann.id }, {
                             onSuccess: () => {
                               queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
-                              toast({ title: "Broadcast deleted" });
-                            }
-                          })
+                              toast({ title: "Announcement deleted" });
+                            },
+                          });
                         }
                       }}
                     >
@@ -512,8 +530,105 @@ export default function AdminDashboard() {
                   </div>
                 ))}
                 {!announcements?.length && (
-                  <div className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">No active broadcasts</div>
+                  <div className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">
+                    No announcements yet
+                  </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="font-display text-3xl tracking-widest uppercase">Users</h2>
+              <span className="font-sans text-sm text-muted-foreground">{users?.length ?? 0} registered</span>
+            </div>
+
+            <div className="border border-white/10 bg-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-sans">
+                  <thead className="border-b border-white/10 bg-white/5 uppercase text-xs tracking-widest text-muted-foreground">
+                    <tr>
+                      <th className="p-4 font-normal">User</th>
+                      <th className="p-4 font-normal">Email</th>
+                      <th className="p-4 font-normal">Role</th>
+                      <th className="p-4 font-normal">Status</th>
+                      <th className="p-4 font-normal">Joined</th>
+                      <th className="p-4 font-normal text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {users?.map((user) => (
+                      <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4">
+                          <div className="font-display text-xl tracking-wider uppercase">{user.username}</div>
+                        </td>
+                        <td className="p-4 text-muted-foreground text-sm">{user.email}</td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
+                            user.role === "admin"
+                              ? "border-primary text-primary bg-primary/10"
+                              : "border-white/20 text-muted-foreground"
+                          }`}>
+                            {user.role === "admin" && <ShieldCheck className="w-3 h-3" />}
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
+                            user.banned === 1
+                              ? "border-destructive text-destructive bg-destructive/10"
+                              : "border-green-500/50 text-green-400 bg-green-500/10"
+                          }`}>
+                            {user.banned === 1 ? "Banned" : "Active"}
+                          </span>
+                        </td>
+                        <td className="p-4 text-muted-foreground text-sm">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none border-white/20 font-sans text-xs uppercase tracking-widest"
+                            onClick={() => handleRoleToggle(user.id, user.role)}
+                            disabled={setUserRole.isPending}
+                            title={user.role === "admin" ? "Remove admin rights" : "Promote to admin"}
+                          >
+                            {user.role === "admin"
+                              ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Remove Admin</>
+                              : <><ShieldCheck className="w-3.5 h-3.5 mr-1" /> Make Admin</>
+                            }
+                          </Button>
+                          <Button
+                            variant={user.banned === 1 ? "outline" : "destructive"}
+                            size="sm"
+                            className={`rounded-none font-sans text-xs uppercase tracking-widest ${
+                              user.banned === 1 ? "border-white/20" : ""
+                            }`}
+                            onClick={() => handleBanToggle(user.id, user.banned)}
+                            disabled={banUser.isPending}
+                          >
+                            {user.banned === 1
+                              ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Unban</>
+                              : <><Ban className="w-3.5 h-3.5 mr-1" /> Ban</>
+                            }
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {!users?.length && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">
+                          No users registered yet
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

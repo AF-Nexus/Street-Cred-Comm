@@ -4,6 +4,7 @@ import productsRouter from "./products";
 import announcementsRouter from "./announcements";
 import adminRouter from "./admin";
 import uploadsRouter from "./uploads";
+import usersRouter from "./users";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(productsRouter);
 router.use(announcementsRouter);
 router.use(adminRouter);
 router.use(uploadsRouter);
+router.use(usersRouter);
 
 export default router;

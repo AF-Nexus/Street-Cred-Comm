@@ -7,17 +7,17 @@ import { getAdminToken } from "@/lib/auth";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-// We will create these pages
 import Shop from "@/pages/shop";
 import ProductDetail from "@/pages/product";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
-// Configure API Client
-setBaseUrl(null); // Local requests
+setBaseUrl(null);
 setAuthTokenGetter(getAdminToken);
 
 const queryClient = new QueryClient({
@@ -52,6 +52,8 @@ function Router() {
       <Route path="/product/:id">
         <PublicLayout><ProductDetail /></PublicLayout>
       </Route>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
       <Route>

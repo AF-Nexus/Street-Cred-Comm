@@ -16,6 +16,8 @@ tags:
     description: Store announcements
   - name: admin
     description: Admin authentication and management
+  - name: users
+    description: User registration and authentication
   - name: uploads
     description: Image upload management
 
@@ -298,6 +300,136 @@ paths:
         "401":
           description: Unauthorized
 
+  /users/register:
+    post:
+      operationId: registerUser
+      tags: [users]
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserToken"
+        "400":
+          description: Validation error
+        "409":
+          description: Email already in use
+
+  /users/login:
+    post:
+      operationId: loginUser
+      tags: [users]
+      summary: Login as a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserToken"
+        "401":
+          description: Invalid credentials
+
+  /users/me:
+    get:
+      operationId: getUserMe
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List all users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
+  /admin/users/{id}/ban:
+    patch:
+      operationId: banUser
+      tags: [admin]
+      summary: Ban or unban a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BanUserInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
+  /admin/users/{id}/role:
+    patch:
+      operationId: setUserRole
+      tags: [admin]
+      summary: Set user role (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetUserRoleInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
   /uploads/image:
     post:
       operationId: uploadImage
@@ -472,6 +604,65 @@ components:
       properties:
         success:
           type: boolean
+
+    UserRegisterInput:
+      type: object
+      required: [email, username, password]
+      properties:
+        email:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    UserLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    UserToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    UserProfile:
+      type: object
+      required: [id, email, username, role, banned, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+        banned:
+          type: integer
+        createdAt:
+          type: string
+
+    BanUserInput:
+      type: object
+      required: [banned]
+      properties:
+        banned:
+          type: integer
+
+    SetUserRoleInput:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
 
     UploadResponse:
       type: object
