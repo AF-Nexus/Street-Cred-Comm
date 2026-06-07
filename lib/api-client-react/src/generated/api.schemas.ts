@@ -21,6 +21,8 @@ export interface Product {
   sizes?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  whatsappNumber?: string | null;
   available: number;
   featured?: number;
   createdAt: string;
@@ -34,6 +36,7 @@ export interface ProductInput {
   category?: string;
   sizes?: string;
   imageUrl?: string;
+  whatsappNumber?: string;
   featured?: number;
 }
 
@@ -44,6 +47,7 @@ export interface ProductUpdate {
   category?: string;
   sizes?: string;
   imageUrl?: string;
+  whatsappNumber?: string;
   available?: number;
   featured?: number;
 }

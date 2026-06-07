@@ -339,6 +339,8 @@ components:
           type: ["string", "null"]
         imageUrl:
           type: ["string", "null"]
+        whatsappNumber:
+          type: ["string", "null"]
         available:
           type: integer
         featured:
@@ -363,6 +365,8 @@ components:
           type: string
         imageUrl:
           type: string
+        whatsappNumber:
+          type: string
         featured:
           type: integer
 
@@ -380,6 +384,8 @@ components:
         sizes:
           type: string
         imageUrl:
+          type: string
+        whatsappNumber:
           type: string
         available:
           type: integer

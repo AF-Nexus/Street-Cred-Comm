@@ -10,6 +10,7 @@ export const productsTable = sqliteTable("products", {
   category: text("category"),
   sizes: text("sizes"),
   imageUrl: text("image_url"),
+  whatsappNumber: text("whatsapp_number"),
   available: integer("available").notNull().default(1),
   featured: integer("featured").notNull().default(0),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),

@@ -53,11 +53,12 @@ export default function ProductDetail() {
   const isSoldOut = product.available === 0;
 
   const handleWhatsAppOrder = () => {
-    let text = `Hi Streetcred! I want to order: ${product.name} - MWK${product.price}`;
+    let text = `Hi StreetCred! I want to order: ${product.name} - MWK${product.price}`;
     if (selectedSize) {
       text += ` - Size: ${selectedSize}`;
     }
-    const url = `https://wa.me/265993702468?text=${encodeURIComponent(text)}`;
+    const number = product.whatsappNumber?.replace(/\D/g, "") || "265993702468";
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
   };
 

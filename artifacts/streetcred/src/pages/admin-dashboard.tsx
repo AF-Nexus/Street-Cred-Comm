@@ -18,6 +18,7 @@ import {
   getListProductsQueryKey,
   getGetProductStatsQueryKey,
   getListAnnouncementsQueryKey,
+  getAdminVerifyQueryKey,
 } from "@workspace/api-client-react";
 import { clearAdminToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const productSchema = z.object({
   category: z.string().optional(),
   sizes: z.string().optional(),
   imageUrl: z.string().optional(),
+  whatsappNumber: z.string().optional(),
   featured: z.coerce.number().optional().default(0),
 });
 
@@ -70,14 +72,15 @@ export default function AdminDashboard() {
   // Authentication check
   const { isLoading: isVerifying, isError: isVerifyError } = useAdminVerify({
     query: {
+      queryKey: getAdminVerifyQueryKey(),
       retry: false,
     }
   });
 
   // Queries
-  const { data: stats } = useGetProductStats({ query: { enabled: !isVerifyError } });
-  const { data: products } = useListProducts(undefined, { query: { enabled: !isVerifyError } });
-  const { data: announcements } = useListAnnouncements({ query: { enabled: !isVerifyError } });
+  const { data: stats } = useGetProductStats({ query: { queryKey: getGetProductStatsQueryKey(), enabled: !isVerifyError } });
+  const { data: products } = useListProducts(undefined, { query: { queryKey: getListProductsQueryKey(), enabled: !isVerifyError } });
+  const { data: announcements } = useListAnnouncements({ query: { queryKey: getListAnnouncementsQueryKey(), enabled: !isVerifyError } });
 
   // Mutations
   const createProduct = useCreateProduct();
@@ -95,6 +98,7 @@ export default function AdminDashboard() {
       category: "",
       sizes: "S, M, L, XL",
       imageUrl: "",
+      whatsappNumber: "",
       featured: 0,
     },
   });
@@ -311,6 +315,25 @@ export default function AdminDashboard() {
                         />
                       </div>
                       
+                      <FormField
+                        control={productForm.control}
+                        name="whatsappNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="uppercase text-xs tracking-widest">Your WhatsApp Number</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="+265999000000"
+                                className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary"
+                              />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">Orders for this item go directly to this number</p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <div className="space-y-2">
                         <FormLabel className="uppercase text-xs tracking-widest">Image Upload</FormLabel>
                         <div className="flex gap-4 items-center">

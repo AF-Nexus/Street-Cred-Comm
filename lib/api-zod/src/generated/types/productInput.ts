@@ -14,5 +14,6 @@ export interface ProductInput {
   category?: string;
   sizes?: string;
   imageUrl?: string;
+  whatsappNumber?: string;
   featured?: number;
 }

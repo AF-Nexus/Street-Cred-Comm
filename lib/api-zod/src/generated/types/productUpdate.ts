@@ -13,6 +13,7 @@ export interface ProductUpdate {
   category?: string;
   sizes?: string;
   imageUrl?: string;
+  whatsappNumber?: string;
   available?: number;
   featured?: number;
 }

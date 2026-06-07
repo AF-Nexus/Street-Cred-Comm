@@ -32,6 +32,7 @@ export const ListProductsResponseItem = zod.object({
   "category": zod.string().nullish(),
   "sizes": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "whatsappNumber": zod.string().nullish(),
   "available": zod.number(),
   "featured": zod.number().optional(),
   "createdAt": zod.string()
@@ -52,6 +53,7 @@ export const CreateProductBody = zod.object({
   "category": zod.string().optional(),
   "sizes": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "whatsappNumber": zod.string().optional(),
   "featured": zod.number().optional()
 })
 
@@ -67,6 +69,7 @@ export const GetFeaturedProductsResponseItem = zod.object({
   "category": zod.string().nullish(),
   "sizes": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "whatsappNumber": zod.string().nullish(),
   "available": zod.number(),
   "featured": zod.number().optional(),
   "createdAt": zod.string()
@@ -103,6 +106,7 @@ export const GetProductResponse = zod.object({
   "category": zod.string().nullish(),
   "sizes": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "whatsappNumber": zod.string().nullish(),
   "available": zod.number(),
   "featured": zod.number().optional(),
   "createdAt": zod.string()
@@ -123,6 +127,7 @@ export const UpdateProductBody = zod.object({
   "category": zod.string().optional(),
   "sizes": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "whatsappNumber": zod.string().optional(),
   "available": zod.number().optional(),
   "featured": zod.number().optional()
 })
@@ -135,6 +140,7 @@ export const UpdateProductResponse = zod.object({
   "category": zod.string().nullish(),
   "sizes": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "whatsappNumber": zod.string().nullish(),
   "available": zod.number(),
   "featured": zod.number().optional(),
   "createdAt": zod.string()
@@ -168,6 +174,7 @@ export const ToggleProductAvailabilityResponse = zod.object({
   "category": zod.string().nullish(),
   "sizes": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "whatsappNumber": zod.string().nullish(),
   "available": zod.number(),
   "featured": zod.number().optional(),
   "createdAt": zod.string()

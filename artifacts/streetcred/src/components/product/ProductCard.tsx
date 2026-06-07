@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import type { Product } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { Product } from "@workspace/api-client-react";
 
 export function ProductCard({ product }: { product: Product }) {
   const isSoldOut = product.available === 0;

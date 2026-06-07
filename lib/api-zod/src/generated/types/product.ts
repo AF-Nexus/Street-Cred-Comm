@@ -18,6 +18,8 @@ export interface Product {
   sizes?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  whatsappNumber?: string | null;
   available: number;
   featured?: number;
   createdAt: string;
