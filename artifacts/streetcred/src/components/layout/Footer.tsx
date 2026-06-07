@@ -12,7 +12,7 @@ export function Footer() {
               <img src={logoPath} alt="Streetcred Logo" className="h-16 w-16 object-cover border border-white/20" />
             </Link>
             <p className="text-muted-foreground max-w-sm font-sans mb-4 leading-relaxed">
-              StreetCred is a bold, urban brand and podcast that embodies the spirit of authenticity and street smarts. 🌆
+              StreetCred is a bold, urban brand and podcast that embodies the spirit of authenticity and street smarts.
             </p>
             <div className="flex items-center gap-2 mb-6 text-primary font-sans text-sm">
               <Mic2 className="w-4 h-4" />

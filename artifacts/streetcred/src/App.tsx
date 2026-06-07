@@ -4,9 +4,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { getAdminToken } from "@/lib/auth";
+import { UserAuthProvider, useUserAuth } from "@/contexts/UserAuthContext";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import StoreHome from "@/pages/store-home";
 import Shop from "@/pages/shop";
 import ProductDetail from "@/pages/product";
 import AdminLogin from "@/pages/admin-login";
@@ -40,11 +42,17 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Root "/" shows different page depending on login state */
+function RootPage() {
+  const { isLoggedIn } = useUserAuth();
+  return isLoggedIn ? <StoreHome /> : <Home />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/">
-        <PublicLayout><Home /></PublicLayout>
+        <PublicLayout><RootPage /></PublicLayout>
       </Route>
       <Route path="/shop">
         <PublicLayout><Shop /></PublicLayout>
@@ -67,9 +75,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <UserAuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </UserAuthProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useGetFeaturedProducts } from "@workspace/api-client-react";
 import { ProductCard, ProductCardSkeleton } from "@/components/product/ProductCard";
-import { ArrowRight, Mic2, Radio } from "lucide-react";
+import { ArrowRight, Mic2, Radio, Building2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoPath from "@assets/IMG-20260606-WA0072_1780821751075.jpg";
 
@@ -123,7 +123,7 @@ export default function Home() {
             A Bold, Urban Brand.
           </h2>
           <p className="font-sans text-xl md:text-2xl font-medium tracking-wide max-w-2xl mx-auto opacity-90 border-l-4 border-black pl-6 text-left">
-            StreetCred embodies the spirit of authenticity and street smarts. 🌆 Born in the streets,
+            StreetCred embodies the spirit of authenticity and street smarts. Born in the streets,
             built for those who live life unapologetically. Limited releases. When it's gone, it's gone.
           </p>
         </div>
@@ -150,8 +150,12 @@ export default function Home() {
             Tune into the StreetCred podcast where <strong className="text-white">real talk meets urban grit.</strong>{" "}
             Join the conversation as hosts and special guests dive into the untold stories, trends, and
             insights shaping the streets. From music and culture to lifestyle and beyond — StreetCred is
-            where authenticity meets the pavement. 💬
+            where authenticity meets the pavement.
           </p>
+          <div className="flex items-center gap-2 mb-6 text-muted-foreground font-sans text-sm">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            <span>Real conversations. No filter.</span>
+          </div>
 
           <div className="flex flex-wrap gap-4 mb-10">
             <div className="flex items-center gap-3 border border-primary/40 bg-primary/5 px-6 py-4">
