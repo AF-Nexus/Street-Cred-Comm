@@ -135,6 +135,19 @@ export interface UploadResponse {
   url: string;
 }
 
+export interface PodcastEmbed {
+  id: number;
+  title?: string | null;
+  embedUrl: string;
+  createdAt: string;
+}
+
+export interface PodcastEmbedInput {
+  title?: string;
+  /** @minLength 1 */
+  embedUrl: string;
+}
+
 export type ListProductsParams = {
 category?: string;
 available?: string;

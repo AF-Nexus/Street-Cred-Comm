@@ -285,6 +285,40 @@ paths:
         "401":
           description: Unauthorized
 
+  /podcast-embed:
+    get:
+      operationId: getPodcastEmbed
+      tags: [announcements]
+      summary: Get the current podcast embed
+      responses:
+        "200":
+          description: Current podcast embed (or null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PodcastEmbed"
+        "404":
+          description: No embed set
+    post:
+      operationId: setPodcastEmbed
+      tags: [announcements]
+      summary: Set the podcast embed (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PodcastEmbedInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PodcastEmbed"
+        "401":
+          description: Unauthorized
+
   /admin/verify:
     get:
       operationId: adminVerify
@@ -670,3 +704,27 @@ components:
       properties:
         url:
           type: string
+
+    PodcastEmbed:
+      type: object
+      required: [id, embedUrl, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        embedUrl:
+          type: string
+        createdAt:
+          type: string
+
+    PodcastEmbedInput:
+      type: object
+      required: [embedUrl]
+      properties:
+        title:
+          type: string
+        embedUrl:
+          type: string
+          minLength: 1

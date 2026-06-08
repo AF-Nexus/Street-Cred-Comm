@@ -17,11 +17,14 @@ import {
   useListUsers,
   useBanUser,
   useSetUserRole,
+  useGetPodcastEmbed,
+  useSetPodcastEmbed,
   getListProductsQueryKey,
   getGetProductStatsQueryKey,
   getListAnnouncementsQueryKey,
   getAdminVerifyQueryKey,
   getListUsersQueryKey,
+  getGetPodcastEmbedQueryKey,
 } from "@workspace/api-client-react";
 import { clearAdminToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -30,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Trash2, Power, Image as ImageIcon, MessageSquare,
-  Package, Upload, Users, ShieldCheck, ShieldOff, Ban, CheckCircle2,
+  Package, Upload, Users, ShieldCheck, ShieldOff, Ban, CheckCircle2, Mic2,
 } from "lucide-react";
 import logoPath from "@assets/IMG-20260606-WA0072_1780821751075.jpg";
 import {
@@ -57,7 +60,7 @@ const announcementSchema = z.object({
   message: z.string().min(1, "Message required"),
 });
 
-type Tab = "products" | "announcements" | "users";
+type Tab = "products" | "announcements" | "users" | "podcast";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -85,6 +88,10 @@ export default function AdminDashboard() {
     query: { queryKey: getListUsersQueryKey(), enabled: !isVerifyError },
   });
 
+  const { data: currentEmbed, refetch: refetchEmbed } = useGetPodcastEmbed({
+    query: { queryKey: getGetPodcastEmbedQueryKey(), enabled: !isVerifyError, retry: false },
+  });
+
   const createProduct = useCreateProduct();
   const toggleAvailability = useToggleProductAvailability();
   const deleteProduct = useDeleteProduct();
@@ -92,6 +99,7 @@ export default function AdminDashboard() {
   const deleteAnnouncement = useDeleteAnnouncement();
   const banUser = useBanUser();
   const setUserRole = useSetUserRole();
+  const setPodcastEmbed = useSetPodcastEmbed();
 
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -218,6 +226,7 @@ export default function AdminDashboard() {
     { key: "products", label: "Products", icon: <Package className="w-5 h-5" /> },
     { key: "announcements", label: "Announcements", icon: <MessageSquare className="w-5 h-5" /> },
     { key: "users", label: "Users", icon: <Users className="w-5 h-5" /> },
+    { key: "podcast", label: "Podcast", icon: <Mic2 className="w-5 h-5" /> },
   ];
 
   return (
@@ -661,6 +670,112 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Podcast Tab */}
+        {activeTab === "podcast" && (
+          <div className="space-y-8 max-w-3xl">
+            <div className="flex justify-between items-center">
+              <h2 className="font-display text-3xl tracking-widest uppercase">Podcast Embed</h2>
+            </div>
+
+            {/* Current embed preview */}
+            {currentEmbed && (
+              <div className="border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <Mic2 className="w-4 h-4" />
+                  <span className="font-sans text-xs uppercase tracking-widest">Live on homepage</span>
+                </div>
+                {currentEmbed.title && (
+                  <div className="font-display text-xl tracking-widest uppercase">{currentEmbed.title}</div>
+                )}
+                <div className="border border-white/10 bg-black overflow-hidden">
+                  <iframe
+                    src={currentEmbed.embedUrl}
+                    className="w-full"
+                    style={{ height: 180 }}
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    title="Current podcast embed"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground font-mono break-all">{currentEmbed.embedUrl}</p>
+              </div>
+            )}
+
+            {/* Post new embed form */}
+            <div className="border border-white/10 bg-card p-6 space-y-6">
+              <h3 className="font-display text-2xl tracking-widest uppercase mb-2">
+                {currentEmbed ? "Update Embed" : "Set Podcast Embed"}
+              </h3>
+              <p className="text-sm text-muted-foreground font-sans leading-relaxed">
+                Paste the embed URL from YouTube, Spotify, or any podcast platform.
+                For YouTube: open the video → Share → Embed → copy just the <code className="text-primary">src</code> URL
+                (e.g. <span className="text-primary/80 font-mono text-xs">https://www.youtube.com/embed/VIDEO_ID</span>).
+                For Spotify: Share → Embed → copy the <code className="text-primary">src</code>.
+              </p>
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  const embedUrl = (fd.get("embedUrl") as string).trim();
+                  const title = (fd.get("title") as string).trim();
+                  if (!embedUrl) return;
+                  setPodcastEmbed.mutate(
+                    { data: { embedUrl, ...(title ? { title } : {}) } },
+                    {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: getGetPodcastEmbedQueryKey() });
+                        refetchEmbed();
+                        toast({ title: "Podcast embed updated on homepage!" });
+                        (e.target as HTMLFormElement).reset();
+                      },
+                      onError: () => toast({ title: "Failed to update embed", variant: "destructive" }),
+                    },
+                  );
+                }}
+              >
+                <div className="space-y-2">
+                  <label className="uppercase text-xs tracking-widest text-muted-foreground font-sans">
+                    Episode Title (optional)
+                  </label>
+                  <Input
+                    name="title"
+                    placeholder="E.g. Ep. 12 — Street Culture in Malawi"
+                    className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase text-xs tracking-widest text-muted-foreground font-sans">
+                    Embed URL *
+                  </label>
+                  <Input
+                    name="embedUrl"
+                    required
+                    placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                    className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary font-mono"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="rounded-none h-12 px-8 font-display text-xl tracking-widest uppercase bg-primary"
+                  disabled={setPodcastEmbed.isPending}
+                >
+                  {setPodcastEmbed.isPending ? "Posting..." : "Post to Homepage"}
+                </Button>
+              </form>
+            </div>
+
+            {/* Help box */}
+            <div className="border border-white/10 bg-white/5 p-5 space-y-3">
+              <p className="font-display text-lg tracking-widest uppercase text-muted-foreground">How to get embed URLs</p>
+              <ul className="space-y-2 text-sm text-muted-foreground font-sans list-disc list-inside">
+                <li><strong className="text-white">YouTube:</strong> Video → Share → Embed → copy the <code>src="..."</code> value</li>
+                <li><strong className="text-white">Spotify:</strong> Episode → ··· → Share → Embed → copy the <code>src="..."</code> value</li>
+                <li><strong className="text-white">SoundCloud:</strong> Track → Share → Embed → copy the <code>src="..."</code> value</li>
+              </ul>
             </div>
           </div>
         )}

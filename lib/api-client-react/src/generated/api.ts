@@ -29,6 +29,8 @@ import type {
   ChangePasswordInput,
   HealthStatus,
   ListProductsParams,
+  PodcastEmbed,
+  PodcastEmbedInput,
   Product,
   ProductInput,
   ProductStats,
@@ -1089,6 +1091,154 @@ export const useAdminChangePassword = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminChangePasswordMutationOptions(options));
+    }
+
+export const getGetPodcastEmbedUrl = () => {
+
+
+
+
+  return `/api/podcast-embed`
+}
+
+/**
+ * @summary Get the current podcast embed
+ */
+export const getPodcastEmbed = async ( options?: RequestInit): Promise<PodcastEmbed> => {
+
+  return customFetch<PodcastEmbed>(getGetPodcastEmbedUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPodcastEmbedQueryKey = () => {
+    return [
+    `/api/podcast-embed`
+    ] as const;
+    }
+
+
+export const getGetPodcastEmbedQueryOptions = <TData = Awaited<ReturnType<typeof getPodcastEmbed>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPodcastEmbed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPodcastEmbedQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPodcastEmbed>>> = ({ signal }) => getPodcastEmbed({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPodcastEmbed>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPodcastEmbedQueryResult = NonNullable<Awaited<ReturnType<typeof getPodcastEmbed>>>
+export type GetPodcastEmbedQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the current podcast embed
+ */
+
+export function useGetPodcastEmbed<TData = Awaited<ReturnType<typeof getPodcastEmbed>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPodcastEmbed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPodcastEmbedQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetPodcastEmbedUrl = () => {
+
+
+
+
+  return `/api/podcast-embed`
+}
+
+/**
+ * @summary Set the podcast embed (admin only)
+ */
+export const setPodcastEmbed = async (podcastEmbedInput: PodcastEmbedInput, options?: RequestInit): Promise<PodcastEmbed> => {
+
+  return customFetch<PodcastEmbed>(getSetPodcastEmbedUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      podcastEmbedInput,)
+  }
+);}
+
+
+
+
+export const getSetPodcastEmbedMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPodcastEmbed>>, TError,{data: BodyType<PodcastEmbedInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPodcastEmbed>>, TError,{data: BodyType<PodcastEmbedInput>}, TContext> => {
+
+const mutationKey = ['setPodcastEmbed'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPodcastEmbed>>, {data: BodyType<PodcastEmbedInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setPodcastEmbed(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPodcastEmbedMutationResult = NonNullable<Awaited<ReturnType<typeof setPodcastEmbed>>>
+    export type SetPodcastEmbedMutationBody = BodyType<PodcastEmbedInput>
+    export type SetPodcastEmbedMutationError = ErrorType<void>
+
+    /**
+ * @summary Set the podcast embed (admin only)
+ */
+export const useSetPodcastEmbed = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPodcastEmbed>>, TError,{data: BodyType<PodcastEmbedInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPodcastEmbed>>,
+        TError,
+        {data: BodyType<PodcastEmbedInput>},
+        TContext
+      > => {
+      return useMutation(getSetPodcastEmbedMutationOptions(options));
     }
 
 export const getAdminVerifyUrl = () => {

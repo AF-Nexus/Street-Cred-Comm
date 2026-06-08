@@ -15,6 +15,8 @@ export * from './banUserInput';
 export * from './changePasswordInput';
 export * from './healthStatus';
 export * from './listProductsParams';
+export * from './podcastEmbed';
+export * from './podcastEmbedInput';
 export * from './product';
 export * from './productInput';
 export * from './productStats';

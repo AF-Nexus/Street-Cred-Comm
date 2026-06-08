@@ -19,6 +19,14 @@ async function runMigrations() {
   try {
     await db.run(sql`ALTER TABLE users ADD COLUMN reset_code_expiry TEXT`);
   } catch { /* column likely already exists */ }
+  try {
+    await db.run(sql`CREATE TABLE IF NOT EXISTS podcast_embeds (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT,
+      embed_url TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`);
+  } catch { /* table likely already exists */ }
   logger.info("DB migrations checked");
 }
 

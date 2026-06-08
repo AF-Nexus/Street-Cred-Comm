@@ -239,6 +239,29 @@ export const AdminChangePasswordResponse = zod.object({
 
 
 /**
+ * @summary Get the current podcast embed
+ */
+export const GetPodcastEmbedResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string().nullish(),
+  "embedUrl": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Set the podcast embed (admin only)
+ */
+
+
+
+export const SetPodcastEmbedBody = zod.object({
+  "title": zod.string().optional(),
+  "embedUrl": zod.string().min(1)
+})
+
+
+/**
  * @summary Verify admin token
  */
 export const AdminVerifyResponse = zod.object({
