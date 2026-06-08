@@ -9,6 +9,9 @@ export const usersTable = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("user"),
   banned: integer("banned").notNull().default(0),
+  country: text("country").default("MW"),
+  resetCode: text("reset_code"),
+  resetCodeExpiry: text("reset_code_expiry"),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
 
@@ -17,6 +20,8 @@ export const insertUserSchema = createInsertSchema(usersTable).omit({
   createdAt: true,
   role: true,
   banned: true,
+  resetCode: true,
+  resetCodeExpiry: true,
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;

@@ -313,7 +313,21 @@ export default function AdminDashboard() {
                         <FormField control={productForm.control} name="category" render={({ field }) => (
                           <FormItem>
                             <FormLabel className="uppercase text-xs tracking-widest">Category</FormLabel>
-                            <FormControl><Input {...field} placeholder="Hoodies, Tees..." className="rounded-none border-white/20 bg-black/50 focus-visible:ring-primary" /></FormControl>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="w-full h-10 border border-white/20 bg-black/50 text-white font-sans text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary rounded-none appearance-none cursor-pointer"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center" }}
+                              >
+                                <option value="">Select category…</option>
+                                <option value="Hoodies">Hoodies</option>
+                                <option value="Tees">Tees</option>
+                                <option value="Bottoms">Bottoms</option>
+                                <option value="Accessories">Accessories</option>
+                                <option value="Hats">Hats</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -508,12 +522,12 @@ export default function AdminDashboard() {
               <h3 className="font-display text-xl tracking-widest uppercase p-6 border-b border-white/10 bg-white/5">Active Announcements</h3>
               <div className="divide-y divide-white/5">
                 {announcements?.map((ann) => (
-                  <div key={ann.id} className="p-6 flex justify-between items-center group hover:bg-white/5 transition-colors">
-                    <div className="font-mono text-lg">{ann.message}</div>
+                  <div key={ann.id} className="p-5 flex justify-between items-center hover:bg-white/5 transition-colors">
+                    <div className="font-mono text-base flex-1 mr-4">{ann.message}</div>
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="rounded-none opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="rounded-none shrink-0"
                       onClick={() => {
                         if (confirm("Delete this announcement?")) {
                           deleteAnnouncement.mutate({ id: ann.id }, {
@@ -553,73 +567,90 @@ export default function AdminDashboard() {
                   <thead className="border-b border-white/10 bg-white/5 uppercase text-xs tracking-widest text-muted-foreground">
                     <tr>
                       <th className="p-4 font-normal">User</th>
-                      <th className="p-4 font-normal">Email</th>
+                      <th className="p-4 font-normal">Country</th>
                       <th className="p-4 font-normal">Role</th>
                       <th className="p-4 font-normal">Status</th>
-                      <th className="p-4 font-normal">Joined</th>
+                      <th className="p-4 font-normal">Reset Code</th>
                       <th className="p-4 font-normal text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {users?.map((user) => (
-                      <tr key={user.id} className="hover:bg-white/5 transition-colors">
-                        <td className="p-4">
-                          <div className="font-display text-xl tracking-wider uppercase">{user.username}</div>
-                        </td>
-                        <td className="p-4 text-muted-foreground text-sm">{user.email}</td>
-                        <td className="p-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
-                            user.role === "admin"
-                              ? "border-primary text-primary bg-primary/10"
-                              : "border-white/20 text-muted-foreground"
-                          }`}>
-                            {user.role === "admin" && <ShieldCheck className="w-3 h-3" />}
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`inline-flex px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
-                            user.banned === 1
-                              ? "border-destructive text-destructive bg-destructive/10"
-                              : "border-green-500/50 text-green-400 bg-green-500/10"
-                          }`}>
-                            {user.banned === 1 ? "Banned" : "Active"}
-                          </span>
-                        </td>
-                        <td className="p-4 text-muted-foreground text-sm">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="p-4 text-right space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-none border-white/20 font-sans text-xs uppercase tracking-widest"
-                            onClick={() => handleRoleToggle(user.id, user.role)}
-                            disabled={setUserRole.isPending}
-                            title={user.role === "admin" ? "Remove admin rights" : "Promote to admin"}
-                          >
-                            {user.role === "admin"
-                              ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Remove Admin</>
-                              : <><ShieldCheck className="w-3.5 h-3.5 mr-1" /> Make Admin</>
-                            }
-                          </Button>
-                          <Button
-                            variant={user.banned === 1 ? "outline" : "destructive"}
-                            size="sm"
-                            className={`rounded-none font-sans text-xs uppercase tracking-widest ${
-                              user.banned === 1 ? "border-white/20" : ""
-                            }`}
-                            onClick={() => handleBanToggle(user.id, user.banned)}
-                            disabled={banUser.isPending}
-                          >
-                            {user.banned === 1
-                              ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Unban</>
-                              : <><Ban className="w-3.5 h-3.5 mr-1" /> Ban</>
-                            }
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {users?.map((user) => {
+                      const hasResetCode = !!(user as any).resetCode;
+                      const codeExpired = hasResetCode && new Date() > new Date((user as any).resetCodeExpiry);
+                      return (
+                        <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                          <td className="p-4">
+                            <div className="font-display text-lg tracking-wider uppercase">{user.username}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{user.email}</div>
+                          </td>
+                          <td className="p-4 text-muted-foreground text-sm uppercase tracking-widest">
+                            {(user as any).country ?? "MW"}
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
+                              user.role === "admin"
+                                ? "border-primary text-primary bg-primary/10"
+                                : "border-white/20 text-muted-foreground"
+                            }`}>
+                              {user.role === "admin" && <ShieldCheck className="w-3 h-3" />}
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex px-2 py-1 text-xs uppercase tracking-widest font-bold border ${
+                              user.banned === 1
+                                ? "border-destructive text-destructive bg-destructive/10"
+                                : "border-green-500/50 text-green-400 bg-green-500/10"
+                            }`}>
+                              {user.banned === 1 ? "Banned" : "Active"}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            {hasResetCode ? (
+                              <div className={`space-y-1 ${codeExpired ? "opacity-50" : ""}`}>
+                                <div className="font-mono text-base font-bold text-primary tracking-[0.2em] select-all">
+                                  {(user as any).resetCode}
+                                </div>
+                                <div className={`text-xs uppercase tracking-widest ${codeExpired ? "text-destructive" : "text-zinc-500"}`}>
+                                  {codeExpired ? "Expired" : "Active — send via WhatsApp"}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/40 uppercase tracking-widest">—</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-none border-white/20 font-sans text-xs uppercase tracking-widest"
+                              onClick={() => handleRoleToggle(user.id, user.role)}
+                              disabled={setUserRole.isPending}
+                            >
+                              {user.role === "admin"
+                                ? <><ShieldOff className="w-3.5 h-3.5 mr-1" /> Remove Admin</>
+                                : <><ShieldCheck className="w-3.5 h-3.5 mr-1" /> Make Admin</>
+                              }
+                            </Button>
+                            <Button
+                              variant={user.banned === 1 ? "outline" : "destructive"}
+                              size="sm"
+                              className={`rounded-none font-sans text-xs uppercase tracking-widest ${
+                                user.banned === 1 ? "border-white/20" : ""
+                              }`}
+                              onClick={() => handleBanToggle(user.id, user.banned)}
+                              disabled={banUser.isPending}
+                            >
+                              {user.banned === 1
+                                ? <><CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Unban</>
+                                : <><Ban className="w-3.5 h-3.5 mr-1" /> Ban</>
+                              }
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {!users?.length && (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-muted-foreground font-display text-2xl tracking-widest uppercase">

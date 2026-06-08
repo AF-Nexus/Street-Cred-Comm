@@ -15,6 +15,8 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -42,7 +44,6 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Root "/" shows different page depending on login state */
 function RootPage() {
   const { isLoggedIn } = useUserAuth();
   return isLoggedIn ? <StoreHome /> : <Home />;
@@ -62,6 +63,8 @@ function Router() {
       </Route>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
       <Route>

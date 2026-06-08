@@ -42,7 +42,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
-      {/* Brand mark */}
       <Link href="/" className="mb-10 group">
         <img
           src={logoPath}
@@ -55,9 +54,9 @@ export default function Login() {
         <div className="mb-8 text-center">
           <h1 className="font-display text-4xl tracking-widest uppercase text-white mb-2">Sign In</h1>
           <p className="text-zinc-500 font-sans text-sm">
-            Don't have an account?{" "}
+            New here?{" "}
             <Link href="/register" className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors">
-              Create one
+              Create an account
             </Link>
           </p>
         </div>
@@ -77,7 +76,15 @@ export default function Login() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-sans text-xs uppercase tracking-widest text-zinc-500">Password</label>
+            <div className="flex items-center justify-between">
+              <label className="font-sans text-xs uppercase tracking-widest text-zinc-500">Password</label>
+              <Link
+                href="/forgot-password"
+                className="font-sans text-xs text-zinc-500 hover:text-primary transition-colors underline underline-offset-4"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
@@ -104,9 +111,7 @@ export default function Login() {
             className="w-full h-12 rounded-none font-display text-lg tracking-widest uppercase gap-2 mt-2"
             disabled={loading}
           >
-            {loading ? (
-              "Signing in..."
-            ) : (
+            {loading ? "Signing in..." : (
               <>
                 <LogIn className="w-4 h-4" />
                 Sign In

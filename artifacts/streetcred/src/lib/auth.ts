@@ -27,6 +27,7 @@ export interface DecodedUser {
   email: string;
   username: string;
   role: string;
+  country: string;
 }
 
 export function decodeUserToken(token: string): DecodedUser | null {
@@ -39,6 +40,7 @@ export function decodeUserToken(token: string): DecodedUser | null {
       email: decoded.email,
       username: decoded.username || decoded.email.split("@")[0],
       role: decoded.role || "user",
+      country: decoded.country || "MW",
     };
   } catch {
     return null;

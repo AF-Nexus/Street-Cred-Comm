@@ -8,13 +8,13 @@ import { requireAdmin } from "../middlewares/auth";
 const router: IRouter = Router();
 const JWT_SECRET = process.env.SESSION_SECRET ?? "streetcred-secret-key";
 
-function generateUserToken(id: number, email: string, role: string): string {
-  return jwt.sign({ id, email, role, type: "user" }, JWT_SECRET, { expiresIn: "30d" });
+function generateUserToken(id: number, email: string, username: string, role: string, country?: string | null): string {
+  return jwt.sign({ id, email, username, role, country: country ?? "MW", type: "user" }, JWT_SECRET, { expiresIn: "30d" });
 }
 
-function verifyUserToken(token: string): { id: number; email: string; role: string } | null {
+function verifyUserToken(token: string): { id: number; email: string; username: string; role: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { id: number; email: string; role: string };
+    return jwt.verify(token, JWT_SECRET) as { id: number; email: string; username: string; role: string };
   } catch {
     return null;
   }
@@ -37,11 +37,16 @@ function requireUser(req: any, res: any, next: any): void {
   next();
 }
 
+function generateResetCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 router.post("/users/register", async (req, res): Promise<void> => {
-  const { email, username, password } = req.body as {
+  const { email, username, password, country } = req.body as {
     email?: string;
     username?: string;
     password?: string;
+    country?: string;
   };
 
   if (!email || !username || !password) {
@@ -62,10 +67,16 @@ router.post("/users/register", async (req, res): Promise<void> => {
   const passwordHash = await bcrypt.hash(password, 10);
   const [user] = await db
     .insert(usersTable)
-    .values({ email, username, passwordHash, createdAt: new Date().toISOString() })
+    .values({
+      email,
+      username,
+      passwordHash,
+      country: country ?? "MW",
+      createdAt: new Date().toISOString(),
+    })
     .returning();
 
-  const token = generateUserToken(user.id, user.email, user.role);
+  const token = generateUserToken(user.id, user.email, user.username, user.role, user.country);
   res.status(201).json({ token });
 });
 
@@ -84,7 +95,7 @@ router.post("/users/login", async (req, res): Promise<void> => {
   }
 
   if (user.banned === 1) {
-    res.status(403).json({ error: "Your account has been banned" });
+    res.status(403).json({ error: "Your account has been banned. Contact us on WhatsApp for help." });
     return;
   }
 
@@ -94,7 +105,7 @@ router.post("/users/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const token = generateUserToken(user.id, user.email, user.role);
+  const token = generateUserToken(user.id, user.email, user.username, user.role, user.country);
   res.json({ token });
 });
 
@@ -104,10 +115,80 @@ router.get("/users/me", requireUser, async (req: any, res): Promise<void> => {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  const { passwordHash: _, ...safe } = user;
+  const { passwordHash: _, resetCode: __, resetCodeExpiry: ___, ...safe } = user;
   res.json(safe);
 });
 
+// Forgot password — generates a 6-digit code, admin sees it in dashboard
+router.post("/users/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body as { email?: string };
+  if (!email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  // Always respond same to prevent email enumeration
+  if (!user) {
+    res.json({ message: "If that email exists, a code has been issued." });
+    return;
+  }
+
+  const code = generateResetCode();
+  const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+  await db
+    .update(usersTable)
+    .set({ resetCode: code, resetCodeExpiry: expiry })
+    .where(eq(usersTable.id, user.id));
+
+  res.json({ message: "Code issued. Please DM +265993702468 on WhatsApp with your email to receive your code." });
+});
+
+// Reset password with code
+router.post("/users/reset-password", async (req, res): Promise<void> => {
+  const { email, code, newPassword } = req.body as {
+    email?: string;
+    code?: string;
+    newPassword?: string;
+  };
+
+  if (!email || !code || !newPassword) {
+    res.status(400).json({ error: "Email, code and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (!user || !user.resetCode || !user.resetCodeExpiry) {
+    res.status(400).json({ error: "No reset code found. Please request a new one." });
+    return;
+  }
+
+  if (user.resetCode !== code) {
+    res.status(400).json({ error: "Invalid reset code." });
+    return;
+  }
+
+  if (new Date() > new Date(user.resetCodeExpiry)) {
+    res.status(400).json({ error: "Reset code has expired. Please request a new one." });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db
+    .update(usersTable)
+    .set({ passwordHash, resetCode: null, resetCodeExpiry: null })
+    .where(eq(usersTable.id, user.id));
+
+  res.json({ message: "Password updated successfully. You can now sign in." });
+});
+
+// Admin: list all users (including reset codes for admin to relay)
 router.get("/admin/users", requireAdmin, async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable);
   const safe = users.map(({ passwordHash: _, ...u }) => u);
@@ -134,7 +215,7 @@ router.patch("/admin/users/:id/ban", requireAdmin, async (req, res): Promise<voi
     return;
   }
 
-  const { passwordHash: _, ...safe } = user;
+  const { passwordHash: _, resetCode: __, resetCodeExpiry: ___, ...safe } = user;
   res.json(safe);
 });
 
@@ -163,7 +244,7 @@ router.patch("/admin/users/:id/role", requireAdmin, async (req, res): Promise<vo
     return;
   }
 
-  const { passwordHash: _, ...safe } = user;
+  const { passwordHash: _, resetCode: __, resetCodeExpiry: ___, ...safe } = user;
   res.json(safe);
 });
 

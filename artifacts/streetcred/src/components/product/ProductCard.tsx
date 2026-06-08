@@ -1,25 +1,30 @@
 import { Link } from "wouter";
 import type { Product } from "@workspace/api-client-react";
+import { formatPrice } from "@/lib/currency";
 
-export function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product;
+  country?: string;
+}
+
+export function ProductCard({ product, country }: ProductCardProps) {
   const isSoldOut = product.available === 0;
 
   return (
     <Link href={`/product/${product.id}`} className="group block relative border border-white/10 hover:border-primary transition-colors bg-card h-full flex flex-col">
       <div className="relative aspect-[3/4] overflow-hidden bg-white/5">
         {product.imageUrl ? (
-          <img 
-            src={product.imageUrl} 
-            alt={product.name} 
+          <img
+            src={product.imageUrl}
+            alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center font-display text-muted-foreground/30 text-4xl">NO IMAGE</div>
         )}
-        
-        {/* Overlays */}
+
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        
+
         {isSoldOut && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px]">
             <div className="border-2 border-destructive text-destructive font-display text-3xl tracking-widest uppercase px-6 py-2 rotate-[-12deg] shadow-[0_0_15px_rgba(220,38,38,0.5)] bg-black/40">
@@ -45,7 +50,7 @@ export function ProductCard({ product }: { product: Product }) {
           </h3>
         </div>
         <p className="text-xl font-bold font-sans tracking-tight">
-          MWK {product.price.toLocaleString()}
+          {formatPrice(product.price, country)}
         </p>
       </div>
     </Link>

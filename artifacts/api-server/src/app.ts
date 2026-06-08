@@ -3,8 +3,26 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { db } from "@workspace/db";
+import { sql } from "drizzle-orm";
 
 const app: Express = express();
+
+// Run safe startup migrations — adds columns that might be missing
+async function runMigrations() {
+  try {
+    await db.run(sql`ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'MW'`);
+  } catch { /* column likely already exists */ }
+  try {
+    await db.run(sql`ALTER TABLE users ADD COLUMN reset_code TEXT`);
+  } catch { /* column likely already exists */ }
+  try {
+    await db.run(sql`ALTER TABLE users ADD COLUMN reset_code_expiry TEXT`);
+  } catch { /* column likely already exists */ }
+  logger.info("DB migrations checked");
+}
+
+runMigrations().catch((e) => logger.warn({ err: e }, "Migration warning"));
 
 app.use(
   pinoHttp({

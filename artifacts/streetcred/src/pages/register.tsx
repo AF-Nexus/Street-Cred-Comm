@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/UserAuthContext";
-import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Globe } from "lucide-react";
 import logoPath from "@assets/IMG-20260606-WA0072_1780821751075.jpg";
+import { COUNTRIES } from "@/lib/currency";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -14,6 +15,7 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [country, setCountry] = useState("MW");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +30,7 @@ export default function Register() {
       const res = await fetch("/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, country }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -46,7 +48,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4 py-12">
       <Link href="/" className="mb-10 group">
         <img
           src={logoPath}
@@ -116,14 +118,31 @@ export default function Register() {
             </div>
           </div>
 
+          {/* Country selector */}
+          <div className="space-y-1.5">
+            <label className="font-sans text-xs uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+              <Globe className="w-3 h-3" /> Country (sets your currency)
+            </label>
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="w-full h-12 border border-zinc-800 bg-zinc-900 text-white font-sans text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 focus:border-primary rounded-none appearance-none cursor-pointer"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code} className="bg-zinc-900">
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Button
             type="submit"
             className="w-full h-12 rounded-none font-display text-lg tracking-widest uppercase gap-2 mt-2"
             disabled={loading}
           >
-            {loading ? (
-              "Creating..."
-            ) : (
+            {loading ? "Creating..." : (
               <>
                 <UserPlus className="w-4 h-4" />
                 Create Account

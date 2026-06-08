@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useListProducts, useGetFeaturedProducts } from "@workspace/api-client-react";
 import { ProductCard, ProductCardSkeleton } from "@/components/product/ProductCard";
 import { useUserAuth } from "@/contexts/UserAuthContext";
+import { formatPrice, getCurrency } from "@/lib/currency";
 import {
   Search, SlidersHorizontal, Flame, Tag, Layers,
-  ShoppingBag, ArrowRight, Sparkles,
+  ShoppingBag, ArrowRight, Sparkles, Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,38 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Accessories: <Sparkles className="w-4 h-4" />,
   Hats: <Tag className="w-4 h-4" />,
 };
+
+function LiveClock({ country }: { country: string }) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const timeStr = now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+  const dateStr = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const currency = getCurrency(country);
+
+  return (
+    <div className="flex flex-col items-end">
+      <div className="flex items-center gap-1.5 text-primary font-mono text-lg font-bold tabular-nums">
+        <Clock className="w-4 h-4" />
+        {timeStr}
+      </div>
+      <div className="flex items-center gap-2 text-zinc-500 font-sans text-xs">
+        <span>{dateStr}</span>
+        <span>·</span>
+        <span>{currency.code} ({currency.symbol})</span>
+      </div>
+    </div>
+  );
+}
 
 export default function StoreHome() {
   const { user } = useUserAuth();
@@ -54,23 +87,22 @@ export default function StoreHome() {
 
       {/* Personal greeting banner */}
       <div className="border-b border-zinc-800 bg-zinc-900">
-        <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <p className="text-zinc-500 font-sans text-sm uppercase tracking-widest mb-1">{greeting}</p>
-            <h1 className="font-display text-4xl md:text-5xl tracking-wider uppercase text-white">
+            <p className="text-zinc-500 font-sans text-xs uppercase tracking-widest mb-1">{greeting}</p>
+            <h1 className="font-display text-3xl md:text-4xl tracking-wider uppercase text-white">
               Welcome back, <span className="text-primary">{user?.username ?? "friend"}</span>
             </h1>
-          </div>
-          <div className="flex items-center gap-3">
             {featured && featured.length > 0 && (
-              <div className="hidden md:flex items-center gap-2 bg-primary/10 border border-primary/30 px-4 py-2">
+              <div className="flex items-center gap-2 mt-2">
                 <Flame className="w-4 h-4 text-primary" />
-                <span className="font-display text-sm tracking-widest uppercase text-primary">
-                  {featured.length} new {featured.length === 1 ? "drop" : "drops"} this week
+                <span className="font-sans text-sm text-zinc-400">
+                  {featured.length} new {featured.length === 1 ? "drop" : "drops"} available
                 </span>
               </div>
             )}
           </div>
+          <LiveClock country={user?.country ?? "MW"} />
         </div>
       </div>
 
@@ -81,11 +113,11 @@ export default function StoreHome() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <Flame className="w-5 h-5 text-primary" />
-                <h2 className="font-display text-2xl tracking-widest uppercase text-white">New Drops</h2>
+                <h2 className="font-display text-xl tracking-widest uppercase text-white">New Drops</h2>
               </div>
               <Link
                 href="/shop"
-                className="flex items-center gap-1 font-sans text-sm text-zinc-400 hover:text-primary transition-colors uppercase tracking-widest"
+                className="flex items-center gap-1 font-sans text-xs text-zinc-400 hover:text-primary transition-colors uppercase tracking-widest"
               >
                 See all <ArrowRight className="w-4 h-4" />
               </Link>
@@ -95,7 +127,7 @@ export default function StoreHome() {
                 <Link
                   key={product.id}
                   href={`/product/${product.id}`}
-                  className="group flex-shrink-0 snap-start w-44 md:w-56 border border-zinc-800 hover:border-primary transition-colors bg-zinc-900 overflow-hidden"
+                  className="group flex-shrink-0 snap-start w-40 md:w-52 border border-zinc-800 hover:border-primary transition-colors bg-zinc-900 overflow-hidden"
                 >
                   <div className="aspect-[3/4] overflow-hidden bg-zinc-800 relative">
                     {product.imageUrl ? (
@@ -106,7 +138,7 @@ export default function StoreHome() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <ShoppingBag className="w-10 h-10 text-zinc-700" />
+                        <ShoppingBag className="w-8 h-8 text-zinc-700" />
                       </div>
                     )}
                     <div className="absolute top-2 left-2 bg-primary text-primary-foreground font-display text-xs tracking-widest px-2 py-0.5">
@@ -117,7 +149,9 @@ export default function StoreHome() {
                     <p className="font-display text-sm tracking-widest uppercase text-white line-clamp-1 group-hover:text-primary transition-colors">
                       {product.name}
                     </p>
-                    <p className="font-mono text-xs text-zinc-400 mt-1">MWK {product.price.toLocaleString()}</p>
+                    <p className="font-mono text-xs text-zinc-400 mt-1">
+                      {formatPrice(product.price, user?.country)}
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -130,7 +164,7 @@ export default function StoreHome() {
       <div className="container mx-auto px-4 py-10">
 
         {/* Search + filter bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-7">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input
@@ -142,7 +176,7 @@ export default function StoreHome() {
           </div>
           <Button
             variant="outline"
-            className={`rounded-none h-11 gap-2 border-zinc-800 font-sans text-sm uppercase tracking-widest px-6 transition-colors ${
+            className={`rounded-none h-11 gap-2 border-zinc-800 font-sans text-sm uppercase tracking-widest px-5 transition-colors ${
               showOnlyAvailable
                 ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
                 : "bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-600"
@@ -155,12 +189,12 @@ export default function StoreHome() {
         </div>
 
         {/* Category pills */}
-        <div className="flex gap-2 flex-wrap mb-10">
+        <div className="flex gap-2 flex-wrap mb-8">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-2 px-5 py-2 font-display text-sm tracking-widest uppercase transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2 font-display text-sm tracking-widest uppercase transition-all border ${
                 activeCategory === cat
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-primary/50 hover:text-white"
@@ -173,8 +207,8 @@ export default function StoreHome() {
         </div>
 
         {/* Results count */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="font-sans text-zinc-500 text-sm uppercase tracking-widest">
+        <div className="mb-5 flex items-center justify-between">
+          <p className="font-sans text-zinc-500 text-xs uppercase tracking-widest">
             {isLoading ? "Loading..." : `${filteredProducts.length} item${filteredProducts.length !== 1 ? "s" : ""}`}
           </p>
           {activeCategory !== "All" && (
@@ -193,7 +227,7 @@ export default function StoreHome() {
             ? Array(10).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)
             : filteredProducts.length > 0
             ? filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} country={user?.country} />
               ))
             : (
               <div className="col-span-full py-24 text-center border border-zinc-800 bg-zinc-900/50">
