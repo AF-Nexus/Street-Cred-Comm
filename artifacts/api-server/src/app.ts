@@ -1,7 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { fileURLToPath } from "url";
 import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -9,7 +8,7 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 const app: Express = express();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDist = path.join(process.cwd(), "artifacts/streetcred/dist");
 
 // Run safe startup migrations
 async function runMigrations() {
@@ -53,9 +52,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 
 // Serve frontend
-app.use(express.static(path.join(__dirname, "../../../../artifacts/streetcred/dist")));
+app.use(express.static(frontendDist));
 app.get("/{*path}", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../../../../artifacts/streetcred/dist/index.html"));
+  res.sendFile(path.join(frontendDist, "index.html"));
 });
 
 export default app;
