@@ -1,14 +1,17 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import { fileURLToPath } from "url";
+import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 const app: Express = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Run safe startup migrations — adds columns that might be missing
+// Run safe startup migrations
 async function runMigrations() {
   try {
     await db.run(sql`ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'MW'`);
@@ -32,29 +35,27 @@ async function runMigrations() {
 
 runMigrations().catch((e) => logger.warn({ err: e }, "Migration warning"));
 
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
+app.use(pinoHttp({
+  logger,
+  serializers: {
+    req(req) {
+      return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
     },
-  }),
-);
+    res(res) {
+      return { statusCode: res.statusCode };
+    },
+  },
+}));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// Serve frontend
+app.use(express.static(path.join(__dirname, "../../../streetcred/dist")));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(__dirname, "../../../streetcred/dist/index.html"));
+});
 
 export default app;
