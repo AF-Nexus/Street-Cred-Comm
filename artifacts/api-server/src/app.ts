@@ -8,7 +8,7 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 const app: Express = express();
-const frontendDist = path.join(process.cwd(), "artifacts/streetcred/dist");
+const frontendDist = path.join(process.cwd(), "artifacts/streetcred/dist/public");
 
 // Run safe startup migrations
 async function runMigrations() {
