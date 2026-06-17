@@ -53,9 +53,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 
 // Serve frontend
-app.use(express.static(path.join(__dirname, "../../../streetcred/dist")));
+app.use(express.static(path.join(__dirname, "../../../../artifacts/streetcred/dist")));
 app.get("/{*path}", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../../../streetcred/dist/index.html"));
+  res.sendFile(path.join(__dirname, "../../../../artifacts/streetcred/dist/index.html"));
 });
 
 export default app;
